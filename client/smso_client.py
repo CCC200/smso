@@ -13,9 +13,9 @@ clientVersion = 'c1.0'
 # reads options.txt
 def readOptions() -> str:
     try:    # i "try-execpt" instead of "with" here bc i only want to create a new txt if it doesn't exist
-        optionTxt = open("scripts\\options.txt")
+        optionTxt = open("options.txt")
     except:
-        optionTxt = open("scripts\\options.txt", "w")
+        optionTxt = open("options.txt", "w")
 
     # declares are sets up each var
     read_option_str = ["username", "ip", "port"]
