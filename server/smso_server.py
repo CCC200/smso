@@ -129,11 +129,32 @@ def print_debug(s):
 
 # Global Flag functions
 server_flags = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# def storage_init():
-#     if os.path.exists("storage.io"):
-#         io_data = open("storage.io")
-#     else:
-#         open("storage.io", "w")
+
+def storage_write():
+    global server_flags
+    try:
+        io_file = open("storage.sav", "w")
+        for i in range(len(server_flags)):
+            io_file.write(f"{server_flags[i]},")
+        io_file.close()
+    except Exception as e:
+        print(f"ERROR: Failed to write to persistent storage!\n{e}")
+
+def storage_init() -> bool:
+    global server_flags
+    if os.path.exists("storage.sav"):
+        try:
+            io_file = open("storage.sav")
+            io_data = io_file.read().split(",")
+            io_file.close()
+            for i in range(len(io_data) - 1):
+                server_flags[i] = int(io_data[i])
+            return True
+        except Exception as e:
+            print(f"ERROR: Failed to read persistent storage!\n{e}")
+    else:
+        storage_write()
+    return False
 
 server_data = [0,0,0,0,[0,0,"",False,False],server_flags]    # index 0-3 = client_data from client(to each specific player). 4 = server data sent to players[0 = level, 1 = gamemode, 2 = who's "it"] 5 = server flag storage
 
@@ -227,6 +248,7 @@ def client_thread(portOffset):
         if stopFlagSync == True: # stops flag data from syncing if it's been disabled
             client_data[2] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         elif global_flag_check(client_data[2]): #prepare global flag sync
+            storage_write()
             server_data[5] = server_flags
             print_debug(f"New server data: {server_data[5]}")
 
@@ -295,6 +317,10 @@ cmdThread = Thread(target = cmdInput)
 cmdThread.start()
 
 print(f"[INFO] Server listening on {socket.gethostbyname(socket.gethostname())}") 
+
+if storage_init(): # load global flags from storage
+    print("[INFO] Progress flags loaded from persistent storage!")
+    print_debug(server_flags)
 
 while True:
     sleep(2.5)
