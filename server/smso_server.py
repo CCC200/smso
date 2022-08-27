@@ -247,7 +247,7 @@ def client_thread(portOffset):
                     tagIt.append(client_data[3][0])
 
         if stopFlagSync == True: # stops flag data from syncing if it's been disabled
-            client_data[2] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            server_data[5] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         elif global_flag_update(client_data[2]): #prepare global flag sync
             server_data[5] = server_flags
             print_debug(f"New server data: {server_data[5]}")
