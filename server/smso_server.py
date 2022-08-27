@@ -130,12 +130,11 @@ def print_debug(s):
 # Global Flag functions
 server_flags = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-def storage_write():
-    global server_flags
+def storage_write(flags):
     try:
         io_file = open("storage.sav", "w")
-        for i in range(len(server_flags)):
-            io_file.write(f"{server_flags[i]},")
+        for i in range(len(flags)):
+            io_file.write(f"{flags[i]},")
         io_file.close()
     except Exception as e:
         print(f"ERROR: Failed to write to persistent storage!\n{e}")
@@ -153,12 +152,12 @@ def storage_init() -> bool:
         except Exception as e:
             print(f"ERROR: Failed to read persistent storage!\n{e}")
     else:
-        storage_write()
+        storage_write(server_flags)
     return False
 
 server_data = [0,0,0,0,[0,0,"",False,False],server_flags]    # index 0-3 = client_data from client(to each specific player). 4 = server data sent to players[0 = level, 1 = gamemode, 2 = who's "it"] 5 = server flag storage
 
-def global_flag_check(client_flags) -> bool:
+def global_flag_update(client_flags) -> bool:
     global server_flags
     do_update = False
     if client_flags != 0:
@@ -173,6 +172,8 @@ def global_flag_check(client_flags) -> bool:
                 print_debug(f"Raising flag {i} from {server_flags[i]} to {client_flags[i]}")
                 server_flags[i] = client_flags[i]
                 do_update = True
+    if do_update:
+        storage_write(server_flags)
     return do_update
 #
 
@@ -247,8 +248,7 @@ def client_thread(portOffset):
 
         if stopFlagSync == True: # stops flag data from syncing if it's been disabled
             client_data[2] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        elif global_flag_check(client_data[2]): #prepare global flag sync
-            storage_write()
+        elif global_flag_update(client_data[2]): #prepare global flag sync
             server_data[5] = server_flags
             print_debug(f"New server data: {server_data[5]}")
 
