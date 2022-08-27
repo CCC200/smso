@@ -62,6 +62,9 @@ def cmdInput():
             elif inputStr == "flags off":
                 stopFlagSync = True
                 print("-> Flags are NOT syncing!")
+            elif inputStr == "flags reset":
+                storage_reset()
+                print("-> Persistent storage has been reset!")
 
             elif inputStrArray[0] == "level":
                 for i in range(len(levelNames)):
@@ -154,6 +157,12 @@ def storage_init() -> bool:
     else:
         storage_write(server_flags)
     return False
+
+def storage_reset() -> bool:
+    global server_flags
+    server_flags = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    storage_write(server_flags)
+    print_debug(server_flags)
 
 server_data = [0,0,0,0,[0,0,"",False,False],server_flags]    # index 0-3 = client_data from client(to each specific player). 4 = server data sent to players[0 = level, 1 = gamemode, 2 = who's "it"] 5 = server flag storage
 
