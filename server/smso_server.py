@@ -114,7 +114,47 @@ def cmdInput():
         except:
             print("Please actually type something :)")
 
-server_data = [0,0,0,0,[0,0,"",False,False]]    # index 0-3 = client_data from client(to each specific player). 4 = server data sent to players[0 = level, 1 = gamemode, 2 = who's "it"]
+# Debug functions
+isdebug = True # control var
+
+def isDebugOn():
+    global isdebug
+    if isdebug:
+        return True
+    return False
+
+def print_debug(s):
+    if isDebugOn:
+        print(f"{s}")
+
+# Global Flag functions
+server_flags = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+# def storage_init():
+#     if os.path.exists("storage.io"):
+#         io_data = open("storage.io")
+#     else:
+#         open("storage.io", "w")
+
+server_data = [0,0,0,0,[0,0,"",False,False],server_flags]    # index 0-3 = client_data from client(to each specific player). 4 = server data sent to players[0 = level, 1 = gamemode, 2 = who's "it"] 5 = server flag storage
+
+def global_flag_check(client_flags) -> bool:
+    global server_flags
+    do_update = False
+    if client_flags != 0:
+        # compare to server & update
+        for i in range(0, 73, 8):
+            if client_flags[int(i/8)] > server_flags[int(i/8)]:
+                print_debug(f"Raising flag {int(i/8)} from {server_flags[int(i/8)]} to {client_flags[int(i/8)]}")
+                server_flags[int(i/8)] = client_flags[int(i/8)]
+                do_update = True
+        for i in range(9, 16):
+            if client_flags[i] > server_flags[i]:
+                print_debug(f"Raising flag {i} from {server_flags[i]} to {client_flags[i]}")
+                server_flags[i] = client_flags[i]
+                do_update = True
+    return do_update
+#
+
 def client_thread(portOffset):
     global playerSlotsPrint
     global playerSlots
@@ -125,6 +165,7 @@ def client_thread(portOffset):
     global startTag
     global tagPlayerTotal
     global resetTimer
+    global server_flags
     printConnection = True
 
 
@@ -183,8 +224,11 @@ def client_thread(portOffset):
                 else:
                     tagIt.append(client_data[3][0])
 
-        if stopFlagSync == True:        # stops flag data from syncing if it's been disabled
-            client_data[2] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]        
+        if stopFlagSync == True: # stops flag data from syncing if it's been disabled
+            client_data[2] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        elif global_flag_check(client_data[2]): #prepare global flag sync
+            server_data[5] = server_flags
+            print_debug(f"New server data: {server_data[5]}")
 
         if level[2] == True:    # checks to see if the server is trying to change everyones level
             server_data[4][0] = level
@@ -201,25 +245,25 @@ def client_thread(portOffset):
         server_data[slotNum] = client_data
 
         if slotNum == 0:
-            indices_to_access_1 = [1, 2, 3, 4]
+            indices_to_access_1 = [1, 2, 3, 4, 5]
             accessed_mapping = map(server_data.__getitem__, indices_to_access_1)
             reply = list(accessed_mapping)
         elif slotNum == 1:
-            indices_to_access_2 = [0, 2, 3, 4]
+            indices_to_access_2 = [0, 2, 3, 4, 5]
             accessed_mapping_2 = map(server_data.__getitem__, indices_to_access_2)
             reply = list(accessed_mapping_2)
         elif slotNum == 2:
-            indices_to_access_3 = [0, 1, 3, 4]
+            indices_to_access_3 = [0, 1, 3, 4, 5]
             accessed_mapping_3 = map(server_data.__getitem__, indices_to_access_3)
             reply = list(accessed_mapping_3)
         elif slotNum == 3:
-            indices_to_access_4 = [0, 1, 2, 4]
+            indices_to_access_4 = [0, 1, 2, 4, 5]
             accessed_mapping_4 = map(server_data.__getitem__, indices_to_access_4)
             reply = list(accessed_mapping_4)
 
         #print(f'Raw Data {sys.getsizeof(reply)}')
         #print(f'Pickled Data {sys.getsizeof(pickle.dumps(reply))}')
-        sock.sendto(pickle.dumps(reply), addr)
+        bytenum = sock.sendto(pickle.dumps(reply), addr)
 
         if kickPlayer == (slotNum + 1):
             kickPlayer = 0

@@ -173,14 +173,32 @@ def gamemode(server_data, gpMarioOriginal, gpMarDirector, client_game_state):
                 memory.write_u8(gpMarioOriginal + 0x119, shirtFlag)
                 memory.write_u8(TMarioCap + 0x5, 0x1)
 
+# debug functions
+isdebug = True # control var
+hasupdated = False
+debugdata = 0
+
+def isDebugOn() -> bool:
+    global isdebug
+    if isdebug:
+        return True
+    return False
+
+# Global Flags
+global_flags = 0
 
 def receive():
+    # gui.draw_text((11,45), 0xffff0000, "Receiving")
     global connected
     global addr
+    global global_flags
+    global hasupdated # debug
+    global debugdata # debug
     #global username
     while True:
+        hasupdated = False
         try:
-            data, receiveAddr = sock.recvfrom(1024)
+            data, receiveAddr = sock.recvfrom(2048)
             connected = 2
         except Exception as e:
             connected = 0
@@ -188,7 +206,7 @@ def receive():
             break
         else:
             server_data = pickle.loads(data)
-            for number in range(len(server_data) - 1):
+            for number in range(len(server_data) - 2):
                 gpMarioNew = memory.read_u32(0x804303DC + (number * 4))
                 gpMarioOriginal = memory.read_u32(0x8040E0E8)
                 gpMarDirector = memory.read_u32(0x8040E178)
@@ -196,7 +214,6 @@ def receive():
                 TPauseMenu2 = memory.read_u32(gpMarDirector + 0xAC)
                 if server_data[number] != 0:
                     gpApplication = memory.read_u32(0x803E9700)
-                    TFlagManager = memory.read_u32(0x8040E160)
                     TWaterGunPointer = memory.read_u32(gpMarioNew + 0x3E4)
                     TNewMarioController = memory.read_u32(gpMarioNew + 0x108)
                     TYoshi = memory.read_u32(gpMarioNew + 0x3F0)
@@ -225,27 +242,6 @@ def receive():
                     #username = server_data[3][0]
 
                     #gamemode(server_data, gpMarioOriginal, gpMarDirector, client_game_state)    # this function deals with all the gamemode stuff | commented out for 120
-
-                    if server_data[number][2] != 0:
-                        client_flag_data = getClientFlagData(TFlagManager)
-                        server_flag_data = server_data[number][2]
-                        for i in range(0, 73, 8):
-                            if server_flag_data[int(i/8)] > client_flag_data[int(i/8)]:
-                                memory.write_u64(TFlagManager + i, server_flag_data[int(i/8)])
-                        if server_flag_data[9] > client_flag_data[9]:
-                            memory.write_u64(TFlagManager + 0x6D, server_flag_data[9])
-                        if server_flag_data[10] > client_flag_data[10]:
-                            memory.write_u32(TFlagManager + 0xD0, server_flag_data[10])
-                        if server_flag_data[11] > client_flag_data[11]:
-                            memory.write_u32(TFlagManager + 0xD4, server_flag_data[11])
-                        if server_flag_data[12] > client_flag_data[12]:
-                            memory.write_u8(TFlagManager + 0x6C, server_flag_data[12])
-                        if server_flag_data[13] > client_flag_data[13]:
-                            memory.write_u32(TFlagManager + 0x70, server_flag_data[13])
-                        if server_flag_data[14] > client_flag_data[14]:
-                            memory.write_u16(TFlagManager + 0x74, server_flag_data[14])
-                        if server_flag_data[15] > client_flag_data[15]:
-                            memory.write_u8(TFlagManager + 0xCD, server_flag_data[15])
 
                     if client_stage1 == server_stage1 and client_game_state != 9 and client_game_state != 0 and server_stage2 != 0xFF and gpMarioNew != gpMarioOriginal and server_game_state != 9 and server_game_state != 0:
                         if memory.read_u8(gpMarioNew + 0x115) == 0x10 and server_game_state != 1:
@@ -335,6 +331,30 @@ def receive():
                 else:
                     if gpMarioNew != gpMarioOriginal and client_game_state != 9 and client_game_state != 0:
                         memory.write_u32(gpMarioNew + 0x7C, 0x0000133F)
+            # Global Flags
+            if global_flags != server_data[4]: #compare global flags for debug
+                hasupdated = True
+            global_flags = server_data[4]
+            debugdata = global_flags
+            TFlagManager = memory.read_u32(0x8040E160)
+            client_flag_data = getClientFlagData(TFlagManager)
+            for i in range(0, 73, 8):
+                if global_flags[int(i/8)] > client_flag_data[int(i/8)]:
+                    memory.write_u64(TFlagManager + i, global_flags[int(i/8)])
+            if global_flags[9] > client_flag_data[9]:
+                memory.write_u64(TFlagManager + 0x6D, global_flags[9])
+            if global_flags[10] > client_flag_data[10]:
+                memory.write_u32(TFlagManager + 0xD0, global_flags[10])
+            if global_flags[11] > client_flag_data[11]:
+                memory.write_u32(TFlagManager + 0xD4, global_flags[11])
+            if global_flags[12] > client_flag_data[12]:
+                memory.write_u8(TFlagManager + 0x6C, global_flags[12])
+            if global_flags[13] > client_flag_data[13]:
+                memory.write_u32(TFlagManager + 0x70, global_flags[13])
+            if global_flags[14] > client_flag_data[14]:
+                memory.write_u16(TFlagManager + 0x74, global_flags[14])
+            if global_flags[15] > client_flag_data[15]:
+                memory.write_u8(TFlagManager + 0xCD, global_flags[15])
     sleep(1)    # if the thread is about to break, makes sure connected is set to false(it can stay true w/o this with some unfortunate timing)
     connected = 0
     sleep(1)
@@ -342,6 +362,8 @@ def receive():
 
 def main(frame):
     global connected
+    global hasupdated # debug
+    global debugdata # debug
 
     gui.draw_text((11,29), 0xff3d3d3d, f"Client Version: {clientVersion}")
 
@@ -372,6 +394,9 @@ def main(frame):
             gui.draw_text((10,5), 0xff00ff00, f"Connected!") # tells user that they are connected
             gui.draw_text((10,17), 0xff00ff00, f"Username: {username}") # prints username on screen
             memory.write_u32(gamemodeOffset + 0xC, 1)   # connected variable in the memory
+            if isDebugOn():
+                gui.draw_text((11,45), 0xffff0000, f"Update: {hasupdated}")
+                gui.draw_text((11,60), 0xffff0000, f"{debugdata}")
         elif connected == 1:
             gui.draw_text((10,5), 0xffffff00, f"Connecting...") # tells user that they are connected
         
