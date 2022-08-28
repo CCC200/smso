@@ -1,0 +1,3 @@
+username: [username]
+ip: [ip]
+port: 8234
