@@ -174,7 +174,7 @@ def gamemode(server_data, gpMarioOriginal, gpMarDirector, client_game_state):
                 memory.write_u8(TMarioCap + 0x5, 0x1)
 
 # debug functions
-isdebug = True # control var
+isdebug = False # control var
 hasupdated = False
 debugdata = 0
 

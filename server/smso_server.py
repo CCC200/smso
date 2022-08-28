@@ -118,7 +118,7 @@ def cmdInput():
             print("Please actually type something :)")
 
 # Debug functions
-isdebug = True # control var
+isdebug = False # control var
 
 def isDebugOn():
     global isdebug
@@ -127,7 +127,7 @@ def isDebugOn():
     return False
 
 def print_debug(s):
-    if isDebugOn:
+    if isDebugOn():
         print(f"{s}")
 
 # Global Flag functions
